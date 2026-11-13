@@ -1,6 +1,6 @@
 import { Router } from "express";
 import authentication from "../middlewares/authentication.js";
-import { createBlog, deleteBlog, getAllBlogs, getMyblogs } from "../controllers/blog.controller.js";
+import { createBlog, deleteBlog, getAllBlogs, getMyblogs, editBlog } from "../controllers/blog.controller.js";
 
 const router = Router();
 //Public routes
@@ -11,6 +11,7 @@ router.get("/get-all-blogs", getAllBlogs);
 //Protected routes
 router.post('/create-blog', authentication, createBlog);
 router.get("/get-my-blogs", authentication, getMyblogs);
-router.delete("/delete-blog/:blogId", authentication, deleteBlog)
+router.delete("/delete-blog/:blogId", authentication, deleteBlog);
+router.patch("/edit-blog/:blogId", authentication, editBlog);
 
 export default router;

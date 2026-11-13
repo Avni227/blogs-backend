@@ -4,7 +4,6 @@ import Blog from "../models/blog.model.js";
 // CREATE BLOG
 export const createBlog = async (req, res) => {
   try {
-
     const user_id = req.user._id;
 
     const { title, description } = req.body;
@@ -25,7 +24,6 @@ export const createBlog = async (req, res) => {
       message: "Blog creatd sucessfully",
       data: blog,
     });
-    
   } catch (error) {
     return res.status(500).json({
       message: error.message,
@@ -37,100 +35,126 @@ export const createBlog = async (req, res) => {
 export const getAllBlogs = async (req, res) => {
   try {
 
+    //Pagination with shorting
     const {
-      page=1,
-      limit=10,
+      page = 1,
+      limit = 10,
       sortBy = "createdAt",
-      sortOrder = "desc"
+      sortOrder = "desc",
+      search=""
     } = req.query;
 
     // Allow only supported sorting fields
-      const allowedSortFields = ["title", "createdAt", "updatedAt"];
+    const allowedSortFields = ["title", "createdAt", "updatedAt"];
 
-      const field = allowedSortFields.includes(sortBy)
-  ? sortBy
-  : "createdAt";
+    const field = allowedSortFields.includes(sortBy) ? sortBy : "createdAt";
 
-  const direction = sortOrder === "asc" ? 1 : -1;
+    const direction = sortOrder === "asc" ? 1 : -1;
 
-  const sortOptions = {
-  [field]: direction
-};
+    const sortOptions = {
+      [field]: direction,
+    };
 
-    const skip = (Number(page)-1) * Number(limit)
-
+    //pagination
+    const skip = (Number(page) - 1) * Number(limit);
     const currentPage = Number(page);
- 
-    const blogs = (await Blog.find().populate("userId","email username").sort(sortOptions).skip(skip).limit(Number(limit)));
+
+    // filter or search
+    const filter = {};
+    if(search){
+      filter.title={
+        $regex:search,
+        $options:"i"
+      }
+    }
     
-    const totalBlogs = await Blog.countDocuments();
+
+    const blogs = await Blog.find(filter)
+      .populate("userId", "email username")
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(Number(limit));
+
+    const totalBlogs = await Blog.countDocuments(filter);
 
     const totalPages = Math.ceil(totalBlogs / limit);
 
-    if(!blogs) {
+    if (!blogs) {
       return res.status(404).json({
-        message: "Blogs not found"
-      })
+        message: "Blogs not found",
+      });
     }
-   
+
+
     return res.status(200).json({
-      messager:"Blogs fetched successfully",
+      messager: "Blogs fetched successfully",
       data: blogs,
       pagination: {
         currentPage,
         totalPages,
         limit: limit,
         hasNextPage: currentPage < totalPages,
-        hasPreviousPage: currentPage > 1
-      }
+        hasPreviousPage: currentPage > 1,
+      },
     });
 
   } catch (error) {
     return res.status(500).json({
-      message: error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
 
 //GET MYBlogs
 export const getMyblogs = async (req, res) => {
-
   try {
-    const {page=1, limit=10} = req.query;
-    const skip = (Number(page)-1) * Number(limit);
+    const { page = 1, limit = 10, search="" } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
     const currentPage = Number(page);
     const userId = req.user._id;
-    
-    const blogs = await Blog.find({userId: userId}).populate("userId", "email username").skip(skip).limit(Number(limit));
 
-    const totalBlogs = await Blog.countDocuments({ userId:userId });
+    // filter or search
+    const filter = {
+      userId: userId 
+    };
 
-    const totalPages = Math.ceil(totalBlogs/limit);
+    if(search){
+      filter.title = {
+        $regex:search,
+        $options:"i"
+      }
+    }
+    const blogs = await Blog.find(filter)
+      .populate("userId", "email username")
+      .sort({createdAt:-1})
+      .skip(skip)
+      .limit(Number(limit));
+
+    const totalBlogs = await Blog.countDocuments(filter);
+
+    const totalPages = Math.ceil(totalBlogs / limit);
 
     if (!blogs) {
-      return res.status(404).json({message: "Blogs not found"})
+      return res.status(404).json({ message: "Blogs not found" });
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
       message: "Blogs fetched successfully",
       data: blogs,
-      pagination:{
-      currentPage,
-      totalPages,
-      limit:limit,
-      hasNextPage:currentPage < totalPages,
-      hasPreviousPage: currentPage > 1
-      }
+      pagination: {
+        currentPage,
+        totalPages,
+        limit: limit,
+        hasNextPage: currentPage < totalPages,
+        hasPreviousPage: currentPage > 1,
+      },
     });
-
   } catch (error) {
-
     return res.status(500).json({
-      message: error.message
-      
-    })
+      message: error.message,
+    });
   }
-}
+};
 
 //DELETE BLOG = method:1 (working) //https://chatgpt.com/c/6aeb091d-8bc0-83ee-8f69-34a4a34e5121
 // export const deleteBlog = async (req, res) => {
@@ -166,34 +190,81 @@ export const deleteBlog = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const {blogId} = req.params;
+    const { blogId } = req.params;
 
     const blog = await Blog.findById(blogId);
 
-    if(!blog){
+    if (!blog) {
       return res.status(404).json({
-      message:"Blog not found"
+        message: "Blog not found",
       });
     }
 
-    if(blog.userId.toString() !== userId.toString()){
+    if (blog.userId.toString() !== userId.toString()) {
       return res.status(403).json({
-       message:"you are not authorized to delete this blog"
+        message: "you are not authorized to delete this blog",
       });
     }
 
-     // Delete specific blog
-    await Blog.findByIdAndDelete(blogId)
+    // Delete specific blog
+    await Blog.findByIdAndDelete(blogId);
 
     return res.status(200).json({
-     message:"Blog deleted successfully"
+      message: "Blog deleted successfully",
     });
-
   } catch (error) {
     return res.status(500).json({
-    message:error.message()
-    
+      message: error.message(),
     });
   }
+};
 
+//Edit Blog API
+export const editBlog = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const { blogId } = req.params;
+    const userId = req.user._id;
+
+    const blog = await Blog.findById(blogId);
+
+    if (!blog) {
+      return res.status(404).json({
+        message: "BLog not found",
+      });
+    }
+
+    if (blog.userId.toString() !== userId.toString()) {
+      return res.status(401).json({
+        message: "You are not allowed to edit this blog",
+      });
+    }
+
+    let updatedData = {};
+    if (title) updatedData.title = title;
+    if (description) updatedData.description = description;
+
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $set: updatedData,
+      },
+      { new: true },
+    );
+
+    if (!updatedBlog) {
+      return res.status(400).json({
+        message: "Error while editing the blog",
+      });
+    }
+
+    return res.status(201).json({
+      message: "Blog updated successfully",
+      updatedBlog,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
 };
