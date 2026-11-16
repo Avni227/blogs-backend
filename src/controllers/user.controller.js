@@ -5,6 +5,15 @@ import "dotenv/config";
 
 export const registerUser = async (req, res) => {
   try {
+
+     console.log("Request Body:", req.body);
+
+    if (!req.body) {
+      return res.status(400).json({
+        message: "Request body is missing",
+      });
+    }
+
     const { username, email, password } = req.body;
 
     if (!username || !email || !password) {
@@ -12,7 +21,11 @@ export const registerUser = async (req, res) => {
         message: "All fields are required",
       });
     }
+    console.log("Connected Database:", User.db.name);
+    console.log("Collection:", User.collection.name);
+    console.log("Checking email:", email);
 
+      
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -90,4 +103,42 @@ export const loginUser = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+export const getAllUsers = async (req, res)=> {
+
+ try{
+
+   const {search = ""} = req.query;
+ // filter or search
+    const filter = {};
+    if(search){
+      filter.username={
+        $regex:search,
+        $options:"i"
+      }
+    }
+
+
+  const users = await User.find(filter);
+
+  if(!users){
+    return res.status(404).json({
+      message:"user not found"
+    });
+  }
+
+  return res.status(200).json({
+   message:"All user get successfuly",
+   data:users
+  });
+
+ }catch(error){
+
+  return res.error.status(500).json({
+    message:error.message
+  });
+
+ }
+
 };

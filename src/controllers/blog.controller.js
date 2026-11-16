@@ -68,7 +68,6 @@ export const getAllBlogs = async (req, res) => {
       }
     }
     
-
     const blogs = await Blog.find(filter)
       .populate("userId", "email username")
       .sort(sortOptions)
@@ -84,7 +83,6 @@ export const getAllBlogs = async (req, res) => {
         message: "Blogs not found",
       });
     }
-
 
     return res.status(200).json({
       messager: "Blogs fetched successfully",
@@ -262,6 +260,7 @@ export const editBlog = async (req, res) => {
       message: "Blog updated successfully",
       updatedBlog,
     });
+    
   } catch (error) {
     return res.status(500).json({
       message: error.message,
