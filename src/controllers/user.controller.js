@@ -2,6 +2,8 @@ import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
+import sendEmail from "../utils/nodemailer.js";
+import emailTemplate from "../services/emailTemplate.js";
 
 export const registerUser = async (req, res) => {
   try {
@@ -142,3 +144,125 @@ export const getAllUsers = async (req, res)=> {
  }
 
 };
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const {email} = req.body
+    
+    if (!email) {
+      return res.status(401).json({
+        message: "Email is required"
+      })
+    }
+
+    const user = await User.findOne({email})
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      })
+    }
+
+    const token = await jwt.sign({userId: user._id}, process.env.JWT_SECRET, {
+      expiresIn: "15m"
+    })
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpiry = Date.now() + 15 * 60 * 1000;
+    await user.save()
+
+
+    const resetPasswordUrl = `http://localhost:5173/reset-password/${token}`
+
+    // Generate email HTML
+    const html = emailTemplate({
+      username: user.username,
+      resetPasswordUrl
+    });
+
+    //node mailer
+    await sendEmail({
+      to: user.email,
+      subject:"Reset your password",
+     html,
+    })
+    return res.status(201).json({
+      message: "Reset password link sent successfully",
+      data: resetPasswordUrl
+    })
+    
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+    })
+  }
+}
+
+
+export const resetPassword = async (req, res) => {
+  try {
+    const {password, confirmPassword} =  req.body
+    const {token} = req.params
+
+    if (!token) {
+      return res.status(401).json({
+        message: "Token is required in params"
+      })
+    }
+
+
+    if (!password || !confirmPassword ) {
+      return res.status(401).json({
+        message: "Both fields are required"
+      })
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(403).json({
+        message: "Password and confirm password must be same"
+      })
+    }
+
+    //let decoded = await jwt.decode(token, process.env.JWT_SECRET)
+    let decoded = await jwt.verify(token, process.env. JWT_SECRET)
+
+    const userId = decoded.userId
+
+    const user = await User.findOne({
+      _id: userId,
+      resetPasswordToken: token,
+      resetPasswordExpiry: { $gt: Date.now()}
+    })
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      })
+    }
+  const previouspassword = user.password ;
+  const isSamePassword = await bcrypt.compare(password, previouspassword);
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        message: "You can not use your previous password"
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    user.password = hashedPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpiry = null;
+    await user.save()
+
+    return res.status(201).json({
+      message: "Password reset successfully",
+      data: user
+    })
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+    })
+  }
+}
