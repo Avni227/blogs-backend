@@ -1,5 +1,7 @@
-import { response } from "express";
+// import { response } from "express";
 import Blog from "../models/blog.model.js";
+import sendRespons from "../utils/sendResponse.js"
+import sendError from "../utils/sendError.js";
 
 // CREATE BLOG
 export const createBlog = async (req, res) => {
@@ -8,26 +10,20 @@ export const createBlog = async (req, res) => {
 
     const { title, description } = req.body;
 
-    if (!title || !description) {
-      return res.status(400).json({
-        message: "all fileds are required",
-      });
+    if (!title || !description || !req.file) {
+      return sendRespons(res, 400, "all fileds are required");
     }
 
     const blog = await Blog.create({
       title,
       description,
+      image: `/public/${req.file.filename}`,
       userId: user_id,
     });
+   return sendRespons(res, 201, "Blog creatd sucessfully",blog);
 
-    return res.status(201).json({
-      message: "Blog creatd sucessfully",
-      data: blog,
-    });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return sendError(res, error.message);
   }
 };
 
@@ -79,27 +75,14 @@ export const getAllBlogs = async (req, res) => {
     const totalPages = Math.ceil(totalBlogs / limit);
 
     if (!blogs) {
-      return res.status(404).json({
-        message: "Blogs not found",
-      });
+      return sendRespons(res, 404, "Blogs not found");
     }
 
-    return res.status(200).json({
-      messager: "Blogs fetched successfully",
-      data: blogs,
-      pagination: {
-        currentPage,
-        totalPages,
-        limit: limit,
-        hasNextPage: currentPage < totalPages,
-        hasPreviousPage: currentPage > 1,
-      },
-    });
+    return sendRespons(res, 200, "Blogs fetched successfully", data, pagination);
+   
 
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
@@ -133,24 +116,15 @@ export const getMyblogs = async (req, res) => {
     const totalPages = Math.ceil(totalBlogs / limit);
 
     if (!blogs) {
-      return res.status(404).json({ message: "Blogs not found" });
+      return sendRespons(res, 404, "Blogs not found");
     }
 
-    return res.status(200).json({
-      message: "Blogs fetched successfully",
-      data: blogs,
-      pagination: {
-        currentPage,
-        totalPages,
-        limit: limit,
-        hasNextPage: currentPage < totalPages,
-        hasPreviousPage: currentPage > 1,
-      },
-    });
+    return sendRespons(res, 200, "Blogs fetched successfully", pagination);
+
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+
+    return sendError(res, error);
+
   }
 };
 
@@ -193,27 +167,19 @@ export const deleteBlog = async (req, res) => {
     const blog = await Blog.findById(blogId);
 
     if (!blog) {
-      return res.status(404).json({
-        message: "Blog not found",
-      });
+      return sendRespons(res, 404,"Blog not found" );
     }
 
     if (blog.userId.toString() !== userId.toString()) {
-      return res.status(403).json({
-        message: "you are not authorized to delete this blog",
-      });
+      return sendRespons(res, 403,"you are not authorized to delete this blog" );
     }
 
     // Delete specific blog
     await Blog.findByIdAndDelete(blogId);
-
-    return res.status(200).json({
-      message: "Blog deleted successfully",
-    });
+   return sendRespons(res, 200, "Blog deleted successfully" );
+  
   } catch (error) {
-    return res.status(500).json({
-      message: error.message(),
-    });
+    return sendError(res, error);
   }
 };
 
@@ -227,15 +193,11 @@ export const editBlog = async (req, res) => {
     const blog = await Blog.findById(blogId);
 
     if (!blog) {
-      return res.status(404).json({
-        message: "BLog not found",
-      });
+      return sendRespons(res, 404, "BLog not found" );
     }
 
     if (blog.userId.toString() !== userId.toString()) {
-      return res.status(401).json({
-        message: "You are not allowed to edit this blog",
-      });
+      return sendRespons(res, 401, "You are not allowed to edit this blog" );
     }
 
     let updatedData = {};
@@ -251,9 +213,7 @@ export const editBlog = async (req, res) => {
     );
 
     if (!updatedBlog) {
-      return res.status(400).json({
-        message: "Error while editing the blog",
-      });
+      return sendRespons(res, 400, "Error while editing the blog" );
     }
 
     return res.status(201).json({
@@ -262,8 +222,6 @@ export const editBlog = async (req, res) => {
     });
     
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return sendError(res, error);
   }
 };

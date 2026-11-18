@@ -4,36 +4,30 @@ import jwt from "jsonwebtoken";
 import "dotenv/config";
 import sendEmail from "../utils/nodemailer.js";
 import emailTemplate from "../services/emailTemplate.js";
+import sendRespons from "../utils/sendResponse.js"
+import sendError from "../utils/sendError.js";
 
 export const registerUser = async (req, res) => {
   try {
 
      console.log("Request Body:", req.body);
 
-    if (!req.body) {
-      return res.status(400).json({
-        message: "Request body is missing",
-      });
-    }
+   
 
     const { username, email, password } = req.body;
 
     if (!username || !email || !password) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
+      return sendRespons(res, 400, "All fields are required");
     }
-    console.log("Connected Database:", User.db.name);
-    console.log("Collection:", User.collection.name);
-    console.log("Checking email:", email);
+    //console.log("Connected Database:", User.db.name);
+    //console.log("Collection:", User.collection.name);
+    //console.log("Checking email:", email);
 
       
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(401).json({
-        message: "User already registered, please login to continue",
-      });
+      return sendRespons(res, 401, "User already registered, please login to continue");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -44,15 +38,10 @@ export const registerUser = async (req, res) => {
       password: hashedPassword,
     });
 
-    return res.status(201).json({
-      message: "User created successfully",
-      data: user,
-    });
+    return sendRespons(res, 201, "User created successfully", user);
     
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return sendError(res, 500, error.message);
   }
 };
 
@@ -61,17 +50,13 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Both email and password are required",
-      });
+      return sendRespons(res, 400, "Both email and password are required");
     }
 
     const existingUser = await User.findOne({ email });
 
     if (!existingUser) {
-      return res.status(400).json({
-        message: "User does not exist, please register first",
-      });
+      return sendRespons(res, 400, "User does not exist, please register first");
     }
 
     const isPasswordCorrect = await bcrypt.compare(
@@ -80,9 +65,7 @@ export const loginUser = async (req, res) => {
     );
 
     if (!isPasswordCorrect) {
-      return res.status(401).json({
-        message: "Invalid password",
-      });
+      return sendRespons(res, 401, "Invalid password");
     }
 
     const token = jwt.sign(
@@ -93,17 +76,12 @@ export const loginUser = async (req, res) => {
       },
     );
 
-    return res.status(200).json({
-      message: "User logged in successfully",
-      data: {
-        existingUser,
-        token,
-      },
-    });
+    return sendRespons(res, 200, "User logged in successfully", {token, existingUser});
+
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+
+    return sendError(res, error);
+
   }
 };
 
@@ -125,21 +103,16 @@ export const getAllUsers = async (req, res)=> {
   const users = await User.find(filter);
 
   if(!users){
-    return res.status(404).json({
-      message:"user not found"
-    });
+
+    return sendRespons(res, 404, "user not found");
+
   }
 
-  return res.status(200).json({
-   message:"All user get successfuly",
-   data:users
-  });
+  return sendRespons(res, 200, "All user get successfuly", data);
 
  }catch(error){
 
-  return res.error.status(500).json({
-    message:error.message
-  });
+  return sendError(res, error);
 
  }
 
@@ -150,17 +123,13 @@ export const forgotPassword = async (req, res) => {
     const {email} = req.body
     
     if (!email) {
-      return res.status(401).json({
-        message: "Email is required"
-      })
+      return sendRespons(res, 401, "Email is required");
     }
 
     const user = await User.findOne({email})
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found"
-      })
+      return sendRespons(res, 404, "User not found");
     }
 
     const token = await jwt.sign({userId: user._id}, process.env.JWT_SECRET, {
@@ -168,7 +137,7 @@ export const forgotPassword = async (req, res) => {
     })
 
     user.resetPasswordToken = token;
-    user.resetPasswordExpiry = Date.now() + 15 * 60 * 1000;
+    user.resetPasswordExpiry = Date.now() + 60 * 60 * 1000;
     await user.save()
 
 
@@ -186,15 +155,13 @@ export const forgotPassword = async (req, res) => {
       subject:"Reset your password",
      html,
     })
-    return res.status(201).json({
-      message: "Reset password link sent successfully",
-      data: resetPasswordUrl
-    })
+
+    return sendRespons(res, 201, "Reset password link sent successfully", data);
     
   } catch (error) {
-    return res.status(500).json({
-      message: error.message
-    })
+
+    return sendError(res, error);
+
   }
 }
 
@@ -205,22 +172,18 @@ export const resetPassword = async (req, res) => {
     const {token} = req.params
 
     if (!token) {
-      return res.status(401).json({
-        message: "Token is required in params"
-      })
+      return sendRespons(res, 401, "Token is required in params");
     }
 
 
     if (!password || !confirmPassword ) {
-      return res.status(401).json({
-        message: "Both fields are required"
-      })
+      return sendRespons(res, 401, "Both fields are required");
     }
 
     if (password !== confirmPassword) {
-      return res.status(403).json({
-        message: "Password and confirm password must be same"
-      })
+
+      return sendRespons(res, 403, "Password and confirm password must be same");
+
     }
 
     //let decoded = await jwt.decode(token, process.env.JWT_SECRET)
@@ -235,17 +198,16 @@ export const resetPassword = async (req, res) => {
     })
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found"
-      })
+      return sendRespons(res, 404,"User not found" );
     }
+
   const previouspassword = user.password ;
   const isSamePassword = await bcrypt.compare(password, previouspassword);
 
     if (isSamePassword) {
-      return res.status(400).json({
-        message: "You can not use your previous password"
-      });
+
+      return sendRespons(res, 400, "You can not use your previous password");
+
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
@@ -255,14 +217,10 @@ export const resetPassword = async (req, res) => {
     user.resetPasswordExpiry = null;
     await user.save()
 
-    return res.status(201).json({
-      message: "Password reset successfully",
-      data: user
-    })
+    return sendRespons(res, 201, "Password reset successfully", data);
+
 
   } catch (error) {
-    return res.status(500).json({
-      message: error.message
-    })
+    return sendError(res, error);
   }
 }

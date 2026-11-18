@@ -15,6 +15,7 @@ app.get('/', (req, res) => {
 await connectDB()
 
 app.use(express.json())
+app.use("/public",express.static("public"))
 app.use(cors())
 
 app.use("/user/v1", userRouter);
