@@ -4,13 +4,15 @@ import { createBlog, deleteBlog, getAllBlogs, getMyblogs, editBlog } from "../co
 import upload from "../utils/multer.js";
 
 const router = Router();
+
 //Public routes
 router.get("/get-all-blogs", getAllBlogs);
 
 
 
+
 //Protected routes
-router.post('/create-blog', authentication,upload.single("image"), createBlog);
+router.post('/create-blog', authentication, /*upload.single("image") this is for single image*/upload.array("images", 5), createBlog);
 router.get("/get-my-blogs", authentication, getMyblogs);
 router.delete("/delete-blog/:blogId", authentication, deleteBlog);
 router.patch("/edit-blog/:blogId", authentication, editBlog);

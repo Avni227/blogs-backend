@@ -10,14 +10,20 @@ export const createBlog = async (req, res) => {
 
     const { title, description } = req.body;
 
-    if (!title || !description || !req.file) {
+    console.log("title:", title, "description:", description, "file:", req.files.length);
+
+    if (!title || !description || !req.files.length === 0) {
       return sendRespons(res, 400, "all fileds are required");
     }
+
+   // Get uploaded images
+    const images = req.files.map((file) => file.filename);
 
     const blog = await Blog.create({
       title,
       description,
-      image: `/public/${req.file.filename}`,
+      //image: `/public/${req.file.filename}`, // this is for the single image
+      images,
       userId: user_id,
     });
    return sendRespons(res, 201, "Blog creatd sucessfully",blog);
