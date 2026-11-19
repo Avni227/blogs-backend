@@ -8,21 +8,18 @@ export const createBlog = async (req, res) => {
   try {
     const user_id = req.user._id;
 
-    const { title, description } = req.body;
+    const { title, description, images} = req.body;
 
-    console.log("title:", title, "description:", description, "file:", req.files.length);
-
-    if (!title || !description || !req.files.length === 0) {
+    if (!title || !description || !images) {
       return sendRespons(res, 400, "all fileds are required");
     }
 
    // Get uploaded images
-    const images = req.files.map((file) => file.filename);
+   
 
     const blog = await Blog.create({
       title,
       description,
-      //image: `/public/${req.file.filename}`, // this is for the single image
       images,
       userId: user_id,
     });
@@ -80,11 +77,21 @@ export const getAllBlogs = async (req, res) => {
 
     const totalPages = Math.ceil(totalBlogs / limit);
 
+     // Prepare pagination
+    const pagination = {
+      currentPage,
+      totalPages,
+      totalBlogs,
+      limit: pageLimit,
+      hasNextPage: currentPage < totalPages,
+      hasPreviousPage: currentPage > 1,
+    };
+
     if (!blogs) {
       return sendRespons(res, 404, "Blogs not found");
     }
 
-    return sendRespons(res, 200, "Blogs fetched successfully", data, pagination);
+    return sendRespons(res, 200, "Blogs fetched successfully", blogs, pagination);
    
 
   } catch (error) {
@@ -120,12 +127,22 @@ export const getMyblogs = async (req, res) => {
     const totalBlogs = await Blog.countDocuments(filter);
 
     const totalPages = Math.ceil(totalBlogs / limit);
+    
+     // Prepare pagination
+    const pagination = {
+      currentPage,
+      totalPages,
+      totalBlogs,
+      limit: pageLimit,
+      hasNextPage: currentPage < totalPages,
+      hasPreviousPage: currentPage > 1,
+    };
 
     if (!blogs) {
       return sendRespons(res, 404, "Blogs not found");
     }
 
-    return sendRespons(res, 200, "Blogs fetched successfully", pagination);
+    return sendRespons(res, 200, "Blogs fetched successfully", blogs, pagination);
 
   } catch (error) {
 
