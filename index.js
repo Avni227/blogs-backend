@@ -6,7 +6,8 @@ import connectDB from "./src/configs/db.config.js";
 import cors from 'cors';
 import userRouter from './src/routes/user.routes.js';
 import blogRouter from './src/routes/blog.routes.js';
-import imageRoutes from "./src/routes/image.routes.js";
+import imageRouter from "./src/routes/image.routes.js";
+import adminRouter from "./src/routes/admin.routes.js";
 
 const app = express()
 const port = process.env.PORT
@@ -31,7 +32,8 @@ app.use(cors())
 
 app.use("/user/v1", userRouter);
 app.use("/blog/v1", blogRouter);
-app.use("/images/v1", imageRoutes);
+app.use("/images/v1", imageRouter);
+app.use("/admin/v1", adminRouter);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)

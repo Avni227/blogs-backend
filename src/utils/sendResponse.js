@@ -1,7 +1,8 @@
-const sendResponse = (req, statusCode, message, data = null, pagination = null)=>{
-  return req.status(statusCode).json({
+const sendResponse = (res, statusCode, message, data = null, pagination = null)=>{
+  return res.status(statusCode).json({
     message,
     data,
+    ...(pagination && { pagination })
   });
 };   
 

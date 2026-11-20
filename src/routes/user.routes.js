@@ -9,5 +9,5 @@ router.post("/login-user", loginUser)
 router.post("/forgot-password", forgotPassword)
 router.post("/reset-password/:token", resetPassword)
 
-export default router
+export default router;
 

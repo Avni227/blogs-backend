@@ -73,21 +73,23 @@ export const getAllBlogs = async (req, res) => {
       .skip(skip)
       .limit(Number(limit));
 
+    
     const totalBlogs = await Blog.countDocuments(filter);
+    //console.log(totalBlogs)
 
     const totalPages = Math.ceil(totalBlogs / limit);
-
+  
      // Prepare pagination
     const pagination = {
       currentPage,
       totalPages,
       totalBlogs,
-      limit: pageLimit,
+      limit,
       hasNextPage: currentPage < totalPages,
       hasPreviousPage: currentPage > 1,
     };
 
-    if (!blogs) {
+    if (blogs.length === 0) {
       return sendRespons(res, 404, "Blogs not found");
     }
 
@@ -95,11 +97,11 @@ export const getAllBlogs = async (req, res) => {
    
 
   } catch (error) {
-    return sendError(res, error);
+    return sendError(res, error.message);
   }
 };
 
-//GET MYBlogs
+//GET MyAllBlogs
 export const getMyblogs = async (req, res) => {
   try {
     const { page = 1, limit = 10, search="" } = req.query;
@@ -139,14 +141,14 @@ export const getMyblogs = async (req, res) => {
     };
 
     if (!blogs) {
-      return sendRespons(res, 404, "Blogs not found");
+      return sendResponse(res, 404, "Blogs not found");
     }
 
-    return sendRespons(res, 200, "Blogs fetched successfully", blogs, pagination);
+    return sendResponse(res, 200, "Blogs fetched successfully", blogs, pagination);
 
   } catch (error) {
 
-    return sendError(res, error);
+    return sendError(res, error.message);
 
   }
 };
@@ -202,7 +204,7 @@ export const deleteBlog = async (req, res) => {
    return sendRespons(res, 200, "Blog deleted successfully" );
   
   } catch (error) {
-    return sendError(res, error);
+    return sendError(res, error.message);
   }
 };
 
@@ -245,6 +247,26 @@ export const editBlog = async (req, res) => {
     });
     
   } catch (error) {
-    return sendError(res, error);
+    return sendError(res, 500, error.message);
   }
 };
+
+//Detail Blog API
+export const getSingleBlogDetail = async(req, res) =>{
+  try{
+  const {blogId} = req.params;
+  console.log(blogId);
+  const blog = await Blog.findById(blogId).populate("userId", "email username");
+
+  console.log(blog);
+
+  if(!blog){
+    return sendRespons(res, 404, "Blog not found");
+  }
+  return sendRespons(res, 200, "Blog fetched successfully", blog );
+  }
+  catch(error){
+   return sendError(res, 500, error.message);
+  };
+}
+
