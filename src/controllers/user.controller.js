@@ -68,6 +68,14 @@ export const loginUser = async (req, res) => {
       return sendRespons(res, 401, "Invalid password");
     }
 
+    if (existingUser.status === "suspended") {
+    return sendRespons(
+      res,
+      403,
+      "Your account has been suspended. Please contact the administrator."
+    );
+    }
+
     const token = jwt.sign(
       { userId: existingUser._id },
       process.env.JWT_SECRET,

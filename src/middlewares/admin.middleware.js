@@ -1,8 +1,7 @@
-import { config } from "dotenv";
-import { jwt } from "jsonwebtoken";
-import Admin from "../models/admin.model"; 
-import sendResponse from "../utils/sendResponse";
-import sendError from "../utils/sendError";
+import  jwt  from "jsonwebtoken";
+import Admin from "../models/admin.model.js"; 
+import sendResponse from "../utils/sendResponse.js";
+import sendError from "../utils/sendError.js";
 
 const adminAuth = async(req, res, next ) => {
 
